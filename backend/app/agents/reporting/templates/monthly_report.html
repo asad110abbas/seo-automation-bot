@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEO Monthly Report — {{ target_url }}</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; color: #1a1a2e; background: #f8fafc; }
+  .header { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 40px; }
+  .header h1 { font-size: 28px; font-weight: 700; }
+  .header p { opacity: 0.85; margin-top: 6px; font-size: 14px; }
+  .badge { display: inline-block; background: rgba(255,255,255,0.2); border-radius: 20px; padding: 4px 14px; font-size: 12px; margin-top: 10px; }
+  .container { max-width: 900px; margin: 0 auto; padding: 30px 20px; }
+  .section { background: white; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+  .section h2 { font-size: 18px; font-weight: 600; color: #4f46e5; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #e5e7eb; }
+  .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+  .metric-card { background: white; border-radius: 10px; padding: 20px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+  .metric-card .value { font-size: 32px; font-weight: 700; color: #4f46e5; }
+  .metric-card .label { font-size: 12px; color: #6b7280; margin-top: 4px; }
+  .score-bar { height: 10px; background: #e5e7eb; border-radius: 5px; overflow: hidden; margin-top: 8px; }
+  .score-fill { height: 100%; background: linear-gradient(90deg, #4f46e5, #7c3aed); border-radius: 5px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: #f3f4f6; text-align: left; padding: 10px 12px; font-weight: 600; color: #374151; }
+  td { padding: 10px 12px; border-bottom: 1px solid #f3f4f6; color: #4b5563; }
+  tr:last-child td { border-bottom: none; }
+  .badge-high { background: #fee2e2; color: #dc2626; border-radius: 4px; padding: 2px 8px; font-size: 11px; }
+  .badge-medium { background: #fef3c7; color: #d97706; border-radius: 4px; padding: 2px 8px; font-size: 11px; }
+  .badge-low { background: #d1fae5; color: #059669; border-radius: 4px; padding: 2px 8px; font-size: 11px; }
+  .issue-critical { color: #dc2626; font-weight: 600; }
+  .issue-warning { color: #d97706; }
+  ul { padding-left: 20px; }
+  ul li { margin-bottom: 6px; font-size: 13px; color: #4b5563; }
+  .footer { text-align: center; color: #9ca3af; font-size: 12px; padding: 20px; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>SEO Monthly Report</h1>
+  <p>{{ target_url }} &nbsp;|&nbsp; {{ business_type }} in {{ location }}</p>
+  <span class="badge">Report Month: {{ report_month }}</span>
+  &nbsp;
+  <span class="badge">Generated: {{ generated_at }}</span>
+</div>
+
+<div class="container">
+
+  <!-- Executive Summary -->
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="value">{{ audit.seo_score or 0 }}</div>
+      <div class="label">SEO Score</div>
+      <div class="score-bar"><div class="score-fill" style="width: {{ audit.seo_score or 0 }}%"></div></div>
+    </div>
+    <div class="metric-card">
+      <div class="value">{{ keywords.total_keywords or 0 }}</div>
+      <div class="label">Keywords Found</div>
+    </div>
+    <div class="metric-card">
+      <div class="value">{{ competitors.competitors | length if competitors.competitors else 0 }}</div>
+      <div class="label">Competitors</div>
+    </div>
+    <div class="metric-card">
+      <div class="value">{{ gbp.gbp_score or 0 }}</div>
+      <div class="label">GBP Score</div>
+      <div class="score-bar"><div class="score-fill" style="width: {{ gbp.gbp_score or 0 }}%"></div></div>
+    </div>
+  </div>
+
+  <!-- Website Audit -->
+  <div class="section">
+    <h2>Website Audit</h2>
+    <p>Pages crawled: <strong>{{ audit.pages_crawled or 0 }}</strong> &nbsp;|&nbsp; SEO Score: <strong>{{ audit.seo_score or 0 }}/100</strong></p>
+    {% if audit.issues %}
+    <br>
+    <table>
+      <tr><th>Issue Type</th><th>Severity</th></tr>
+      {% for issue in (audit.issues.critical or [])[:5] %}
+      <tr><td>{{ issue.type | replace('_', ' ') | title }}</td><td><span class="badge-high">Critical</span></td></tr>
+      {% endfor %}
+      {% for issue in (audit.issues.warning or [])[:5] %}
+      <tr><td>{{ issue.type | replace('_', ' ') | title }}</td><td><span class="badge-medium">Warning</span></td></tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+    {% if audit.recommendations %}
+    <br><strong>Recommendations:</strong>
+    <ul>
+      {% for rec in audit.recommendations[:5] %}
+      <li>{{ rec }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+
+  <!-- Keywords -->
+  <div class="section">
+    <h2>Keyword Research</h2>
+    <p>Total keywords discovered: <strong>{{ keywords.total_keywords or 0 }}</strong> &nbsp;|&nbsp; Quick wins: <strong>{{ (keywords.quick_wins or []) | length }}</strong></p>
+    {% if keywords.quick_wins %}
+    <br>
+    <table>
+      <tr><th>Keyword</th><th>Volume</th><th>Difficulty</th></tr>
+      {% for kw in (keywords.quick_wins or [])[:10] %}
+      <tr>
+        <td>{{ kw.keyword }}</td>
+        <td>{{ kw.search_volume or '–' }}</td>
+        <td>{{ kw.difficulty or '–' }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+  </div>
+
+  <!-- Competitor Analysis -->
+  <div class="section">
+    <h2>Competitor Analysis</h2>
+    {% if competitors.competitors %}
+    <table>
+      <tr><th>Competitor</th><th>Rank</th><th>Est. Keywords</th></tr>
+      {% for comp in competitors.competitors[:5] %}
+      <tr>
+        <td>{{ comp.url }}</td>
+        <td>#{{ comp.rank or '–' }}</td>
+        <td>{{ comp.estimated_keywords or '–' }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+    {% if competitors.content_gaps %}
+    <br><strong>Top Content Gaps:</strong>
+    <ul>
+      {% for gap in (competitors.content_gaps or [])[:8] %}
+      <li>{{ gap.keyword }} <span class="badge-{{ gap.opportunity }}">{{ gap.opportunity }}</span></li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+
+  <!-- GBP Suggestions -->
+  <div class="section">
+    <h2>Google Business Profile Optimization</h2>
+    <p>GBP Score: <strong>{{ gbp.gbp_score or 0 }}/100</strong></p>
+    {% if gbp.suggestions %}
+    <br>
+    <table>
+      <tr><th>Category</th><th>Suggestion</th><th>Priority</th></tr>
+      {% for sug in (gbp.suggestions or [])[:8] %}
+      <tr>
+        <td>{{ sug.category | title }}</td>
+        <td>{{ sug.suggestion }}</td>
+        <td><span class="badge-{{ sug.priority }}">{{ sug.priority | title }}</span></td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+  </div>
+
+  <!-- Content -->
+  <div class="section">
+    <h2>Generated Content</h2>
+    {% if content.generated_content %}
+    <table>
+      <tr><th>Title</th><th>Type</th><th>Words</th><th>SEO Score</th></tr>
+      {% for piece in content.generated_content %}
+      <tr>
+        <td>{{ piece.title }}</td>
+        <td>{{ piece.content_type | replace('_', ' ') | title }}</td>
+        <td>{{ piece.word_count }}</td>
+        <td>{{ piece.seo_score }}/100</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+    <p>No content generated this month.</p>
+    {% endif %}
+  </div>
+
+  <!-- Link Building -->
+  <div class="section">
+    <h2>Link Building Opportunities</h2>
+    <p>Total opportunities found: <strong>{{ links.total_opportunities or 0 }}</strong></p>
+    {% if links.opportunities %}
+    <br>
+    <table>
+      <tr><th>Directory</th><th>Relevance</th><th>Est. DA</th><th>Type</th></tr>
+      {% for opp in (links.opportunities or [])[:10] %}
+      <tr>
+        <td>{{ opp.directory_name }}</td>
+        <td>{{ opp.relevance_score or '–' }}</td>
+        <td>{{ opp.estimated_da or '–' }}</td>
+        <td>{{ opp.submission_type or 'free' }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+  </div>
+
+</div>
+
+<div class="footer">
+  Generated by <strong>SEO Automation Bot</strong> &nbsp;|&nbsp; {{ generated_at }}
+</div>
+
+</body>
+</html>
